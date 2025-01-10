@@ -1,2 +1,2 @@
-# ARIMA-based-Time-Series-Forecasting-for-Sales-Forecasting
+# ARIMA-based-Time-Series-Forecasting-for-Sales-Trends
 This project utilizes advanced ARIMA time series forecasting models to predict future Bike sales trends based on historical data. By analyzing sales across various age groups, product categories, and regions, it provides actionable insights for business decision-making, optimizing inventory, and strategizing revenue growth in the upcoming year.
