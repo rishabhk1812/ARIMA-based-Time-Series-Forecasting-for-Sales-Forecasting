@@ -1,49 +1,75 @@
-# History files
-.Rhistory
-.Rapp.history
+data1 <- read.csv("Bike Sales.csv")
+str(data1)
 
-# Session Data files
-.RData
-.RDataTmp
+# Convert Date of Sales into a Date object
+data1$Date <-  as.Date(data1$Date, format = "%y-%m-%d")
+str(data1$Date)
 
-# User-specific files
-.Ruserdata
+# Aggregate data by month and calculate total sales
+monthly_sales <- data1 %>%
+  group_by(Month = format(Date, "%Y-%m")) %>%
+  summarise(Revenue = sum(Revenue)) %>%
+  arrange(Month)
 
-# Example code in package build process
-*-Ex.R
+# Convert Month to Date format and Total_Revenue to Time Series object
+monthly_sales$Month <- as.Date(paste0(monthly_sales$Month, "-01"))
+sales_ts <- ts(monthly_sales$Revenue, start = c(as.numeric(format(min(monthly_sales$Month), "%Y")),
+                                                      as.numeric(format(min(monthly_sales$Month), "%m"))),
+               frequency = 12)# Monthly data
 
-# Output files from R CMD build
-/*.tar.gz
+library(zoo)
+data1$Revenue <- na.approx(data1$Revenue)
 
-# Output files from R CMD check
-/*.Rcheck/
+# Fit ARIMA model
+arima_model <- auto.arima(sales_ts)
 
-# RStudio files
-.Rproj.user/
+# Print model summary
+summary(arima_model)
 
-# produced vignettes
-vignettes/*.html
-vignettes/*.pdf
+# Forecast for the next 12 months
+sales_forecast <- forecast(arima_model, h = 12)
 
-# OAuth2 token, see https://github.com/hadley/httr/releases/tag/v0.3
-.httr-oauth
 
-# knitr and R markdown default cache directories
-*_cache/
-/cache/
+# Extract forecasted values
+forecasted_values <- sales_forecast$mean
 
-# Temporary files created by R markdown
-*.utf8.md
-*.knit.md
+# View forecasted monthly values
+print(forecasted_values)
 
-# R Environment Variables
-.Renviron
+# Calculate the total forecasted sales for the year
+total_forecasted_sales <- sum(forecasted_values)
+print(paste("Total Forecasted Sales for the Next Year:", round(total_forecasted_sales, 2)))
 
-# pkgdown site
-docs/
+#################
 
-# translation temp files
-po/*~
+# Extract forecasted values
+forecasted_values <- data.frame(
+  Date = seq(from = max(monthly_sales$Month) + 1, 
+             by = "month", 
+             length.out = length(sales_forecast$mean)),
+  Sales = as.numeric(sales_forecast$mean),
+  Type = "Forecast"
+)
 
-# RStudio Connect folder
-rsconnect/
+# Historical values
+historical_values <- data.frame(
+  Date = monthly_sales$Month,
+  Sales = monthly_sales$Revenue,
+  Type = "Actual"
+)
+
+# Combine historical and forecasted data
+combined_data <- rbind(historical_values, forecasted_values)
+
+# View the combined data (optional)
+print(combined_data)
+
+# Line chart with Plotly
+plot_ly(data = combined_data, x = ~Date, y = ~Sales, color = ~Type, 
+        type = 'scatter', mode = 'lines') %>%
+  layout(
+    title = "Sales Over Time with Forecast Highlighted",
+    xaxis = list(title = "Date"),
+    yaxis = list(title = "Sales"),
+    legend = list(title = list(text = "Type"))
+  )
